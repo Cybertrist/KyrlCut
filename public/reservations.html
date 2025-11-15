@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Réservation – Kyrl Cut</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body class="app-bg res-bg">
+
+  <div class="res-page">
+
+    <!-- HEADER -->
+    <header class="res-header">
+      <div class="brand">
+        <div class="brand-logo">KC</div>
+        <div>
+          <div class="brand-name">KYRL CUT</div>
+          <div class="brand-subtitle">Espace privé</div>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 10px; align-items: center;">
+        <a href="/reservations" class="nav-btn active">Réservations</a>
+        <a href="/profile" class="nav-btn">Profil</a>
+        <a href="/admin" id="admin-link" class="nav-btn" style="display: none;">Admin</a>
+        <form action="/api/logout" method="POST" style="margin: 0;">
+          <button class="res-logout-btn" type="submit">Se déconnecter</button>
+        </form>
+      </div>
+    </header>
+
+    <!-- Message de confirmation/erreur -->
+    <div id="message-container"></div>
+
+    <!-- CONTENU PRINCIPAL -->
+    <main class="res-layout">
+
+      <!-- PANNEAU GAUCHE : réservation -->
+      <section class="res-panel res-panel-main">
+        <h1 class="res-title">Prendre un rendez-vous</h1>
+        <p class="res-subtitle">
+          Choisis ta prestation, une date et un créneau horaire.
+        </p>
+
+        <!-- Sélection de la prestation -->
+        <div class="res-block">
+          <div class="res-block-header">
+            <span class="res-block-label">Prestation</span>
+          </div>
+          <div id="prestations-container" class="prestations-grid">
+            <!-- Rempli dynamiquement par JavaScript -->
+          </div>
+        </div>
+
+        <!-- Sélection de la date -->
+        <div class="res-block">
+          <div class="res-block-header">
+            <span class="res-block-label">Date</span>
+          </div>
+          <div id="dates-container" class="res-date-row">
+            <!-- Rempli dynamiquement par JavaScript -->
+          </div>
+        </div>
+
+        <!-- Créneaux horaires disponibles -->
+        <div class="res-block">
+          <div class="res-block-header">
+            <span class="res-block-label">Créneaux disponibles</span>
+          </div>
+          <div id="slots-container" class="res-slots-grid">
+            <div class="empty-state-box">
+              <p class="empty-state-text">Sélectionne une date pour voir les créneaux disponibles</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bouton de confirmation -->
+        <div class="res-cta-row">
+          <button id="confirm-btn" class="btn-primary res-cta-btn" type="button" disabled>
+            Confirmer ce créneau
+          </button>
+        </div>
+      </section>
+
+      <!-- PANNEAU DROIT : résumé + infos -->
+      <aside class="res-panel res-panel-side">
+        <h2 class="res-side-title">Récapitulatif</h2>
+
+        <div class="res-summary">
+          <div class="res-summary-row">
+            <span>Prestation</span>
+            <strong id="summary-prestation">—</strong>
+          </div>
+          <div class="res-summary-row">
+            <span>Date</span>
+            <strong id="summary-date">—</strong>
+          </div>
+          <div class="res-summary-row">
+            <span>Horaire</span>
+            <strong id="summary-horaire">—</strong>
+          </div>
+          <div class="res-summary-row">
+            <span>Tarif</span>
+            <strong id="summary-prix">20 €</strong>
+          </div>
+        </div>
+
+        <div id="lieu-container" style="display: none; margin-top: 15px;">
+          <h3>Lieu du rendez-vous</h3>
+          <p id="summary-lieu" style="font-size: 14px; margin: 10px 0;"></p>
+          <div id="map-container" style="margin-top: 10px;">
+            <!-- Carte Google Maps -->
+          </div>
+        </div>
+      </aside>
+
+    </main>
+  </div>
+
+  <script>
+    /**
+     * SYSTÈME DE RÉSERVATION DYNAMIQUE
+     * Gère la sélection de prestation, date et créneau avec mise à jour en temps réel
+     */
+
+    // État de la réservation en cours
+    let reservationState = {
+      prestationId: null,
+      prestationNom: null,
+      prestationDuree: null,
+      date: null,
+      dateFormatted: null,
+      heureDebut: null,
+      heureFin: null,
+      lieu: null
+    };
+
+    // Cache des données
+    let prestations = [];
+    let availableSlots = [];
+
+    /**
+     * Initialisation au chargement de la page
+     */
+    document.addEventListener('DOMContentLoaded', async function() {
+      await loadPrestations();
+      generateDates();
+      checkForMessages();
+      await checkUserRole();
+    });
+
+    /**
+     * Vérifie si l'utilisateur est admin et affiche le bouton
+     */
+    async function checkUserRole() {
+      try {
+        const response = await fetch('/api/user/me');
+        if (response.ok) {
+          const user = await response.json();
+          if (user.role === 'admin') {
+            document.getElementById('admin-link').style.display = 'block';
+          }
+        }
+      } catch (error) {
+        console.error('Erreur vérification rôle:', error);
+      }
+    }
+
+    /**
+     * Charge toutes les prestations disponibles depuis l'API
+     */
+    async function loadPrestations() {
+      try {
+        const response = await fetch('/api/prestations');
+        prestations = await response.json();
+        displayPrestations();
+      } catch (error) {
+        console.error('Erreur chargement prestations:', error);
+        showMessage('Erreur de chargement des prestations', 'error');
+      }
+    }
+
+    /**
+     * Affiche les prestations sous forme de cartes sélectionnables
+     */
+    function displayPrestations() {
+      const container = document.getElementById('prestations-container');
+      container.innerHTML = '';
+
+      prestations.forEach(prestation => {
+        const card = document.createElement('div');
+        card.className = 'prestation-card';
+        card.innerHTML = `
+          <div class="prestation-name">${prestation.nom}</div>
+          <div class="prestation-desc">${prestation.description}</div>
+          <div class="prestation-meta">${prestation.duree_minutes} min · ${prestation.prix} €</div>
+        `;
+        
+        card.addEventListener('click', () => selectPrestation(prestation, card));
+        container.appendChild(card);
+      });
+    }
+
+    /**
+     * Sélectionne une prestation et met à jour l'interface
+     */
+    function selectPrestation(prestation, cardElement) {
+      // Retirer la sélection précédente
+      document.querySelectorAll('.prestation-card').forEach(c => c.classList.remove('selected'));
+      
+      // Marquer comme sélectionnée
+      cardElement.classList.add('selected');
+      
+      // Mettre à jour l'état
+      reservationState.prestationId = prestation.id;
+      reservationState.prestationNom = prestation.nom;
+      reservationState.prestationDuree = prestation.duree_minutes;
+      
+      // Mettre à jour le résumé
+      document.getElementById('summary-prestation').textContent = prestation.nom;
+      document.getElementById('summary-prix').textContent = `${prestation.prix} €`;
+      
+      // Recharger les créneaux si une date est sélectionnée
+      if (reservationState.date) {
+        loadAvailableSlots(reservationState.date);
+      }
+      
+      updateConfirmButton();
+    }
+
+    /**
+     * Génère les dates de la semaine en cours (Lundi à Dimanche)
+     */
+    function generateDates() {
+      const container = document.getElementById('dates-container');
+      container.innerHTML = '';
+      
+      const today = new Date();
+      const joursSemaine = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
+      const mois = ['jan', 'fév', 'mar', 'avr', 'mai', 'juin', 'juil', 'août', 'sep', 'oct', 'nov', 'déc'];
+      
+      // Trouver le lundi de la semaine en cours
+      const currentDay = today.getDay();
+      const diff = currentDay === 0 ? -6 : 1 - currentDay; // Si dimanche, reculer de 6 jours, sinon aller au lundi
+      const monday = new Date(today);
+      monday.setDate(today.getDate() + diff);
+      
+      // Générer du lundi au dimanche (7 jours)
+      for (let i = 0; i < 7; i++) {
+        const date = new Date(monday);
+        date.setDate(monday.getDate() + i);
+        
+        // Formater la date en YYYY-MM-DD sans problème de fuseau horaire
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const dateStr = `${year}-${month}-${day}`;
+        
+        const jour = joursSemaine[date.getDay()];
+        const numJour = date.getDate();
+        const moisStr = mois[date.getMonth()];
+        
+        const pill = document.createElement('button');
+        pill.className = 'res-date-pill';
+        pill.type = 'button';
+        pill.textContent = `${jour} ${numJour} ${moisStr}`;
+        pill.dataset.date = dateStr;
+        
+        // Désactiver les dates passées
+        if (date < new Date(today.toDateString())) {
+          pill.disabled = true;
+          pill.style.opacity = '0.4';
+          pill.style.cursor = 'not-allowed';
+        } else {
+          pill.addEventListener('click', () => selectDate(dateStr, pill));
+        }
+        
+        container.appendChild(pill);
+      }
+    }
+
+    /**
+     * Sélectionne une date et charge les créneaux disponibles
+     */
+    async function selectDate(dateStr, pillElement) {
+      // Retirer la sélection précédente
+      document.querySelectorAll('.res-date-pill').forEach(p => p.classList.remove('res-date-pill--active'));
+      
+      // Marquer comme sélectionnée
+      pillElement.classList.add('res-date-pill--active');
+      
+      // Mettre à jour l'état
+      reservationState.date = dateStr;
+      reservationState.dateFormatted = formatDate(dateStr);
+      reservationState.heureDebut = null;
+      reservationState.heureFin = null;
+      
+      // Mettre à jour le résumé
+      document.getElementById('summary-date').textContent = reservationState.dateFormatted;
+      document.getElementById('summary-horaire').textContent = '—';
+      
+      // Charger les créneaux disponibles
+      await loadAvailableSlots(dateStr);
+      
+      updateConfirmButton();
+    }
+
+    /**
+     * Charge les créneaux disponibles pour une date donnée
+     */
+    async function loadAvailableSlots(dateStr) {
+      const container = document.getElementById('slots-container');
+      
+      if (!reservationState.prestationId) {
+        container.innerHTML = '<div class="empty-state-box"><p class="empty-state-text">Sélectionne d\'abord une prestation</p></div>';
+        return;
+      }
+      
+      container.innerHTML = '<div class="empty-state-box"><p class="empty-state-text">Chargement...</p></div>';
+      
+      try {
+        const response = await fetch(`/api/slots/${dateStr}?prestationId=${reservationState.prestationId}`);
+        availableSlots = await response.json();
+        console.log('Créneaux reçus pour', dateStr, ':', availableSlots);
+        displaySlots();
+      } catch (error) {
+        console.error('Erreur chargement créneaux:', error);
+        container.innerHTML = '<p class="empty-state">Erreur de chargement</p>';
+      }
+    }
+
+    /**
+     * Affiche les créneaux horaires disponibles
+     */
+    function displaySlots() {
+      const container = document.getElementById('slots-container');
+      
+      if (availableSlots.length === 0) {
+        container.innerHTML = '<p class="empty-state">Aucun créneau disponible ce jour</p>';
+        return;
+      }
+      
+      container.innerHTML = '';
+      
+      // Obtenir l'heure actuelle + 1h
+      const now = new Date();
+      const selectedDate = new Date(reservationState.date + 'T00:00:00');
+      const today = new Date(now.toDateString());
+      const isToday = selectedDate.getTime() === today.getTime();
+      
+      availableSlots.forEach(slot => {
+        const btn = document.createElement('button');
+        btn.className = 'res-slot-btn';
+        btn.type = 'button';
+        btn.textContent = slot.heure_debut.substring(0, 5);
+        btn.dataset.debut = slot.heure_debut;
+        btn.dataset.fin = slot.heure_fin;
+        
+        let isDisabled = false;
+        let disabledReason = '';
+        
+        // Vérifier si le créneau est réservé (priorité #1)
+        if (slot.reserve === true) {
+          isDisabled = true;
+          disabledReason = 'Créneau déjà réservé';
+        }
+        // Vérifier si le créneau est dans le passé (si c'est aujourd'hui)
+        else if (isToday) {
+          const [hours, minutes] = slot.heure_debut.split(':');
+          const slotTime = new Date(now);
+          slotTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+          
+          // Ajouter 1h de délai minimum
+          const minTime = new Date(now.getTime() + 60 * 60 * 1000);
+          
+          if (slotTime < minTime) {
+            isDisabled = true;
+            disabledReason = 'Créneau passé ou trop proche';
+          }
+        }
+        
+        if (isDisabled) {
+          btn.disabled = true;
+          btn.classList.add('res-slot-btn--disabled');
+          btn.title = disabledReason;
+        } else {
+          btn.addEventListener('click', () => selectSlot(slot, btn));
+        }
+        
+        container.appendChild(btn);
+      });
+    }
+
+    /**
+     * Sélectionne un créneau horaire
+     */
+    function selectSlot(slot, btnElement) {
+      // Retirer la sélection précédente
+      document.querySelectorAll('.res-slot-btn').forEach(b => b.classList.remove('res-slot-btn--active'));
+      
+      // Marquer comme sélectionné
+      btnElement.classList.add('res-slot-btn--active');
+      
+      // Mettre à jour l'état
+      reservationState.heureDebut = slot.heure_debut;
+      reservationState.heureFin = slot.heure_fin;
+      reservationState.lieu = slot.lieu;
+      
+      // Mettre à jour le résumé
+      const debut = slot.heure_debut.substring(0, 5);
+      const fin = slot.heure_fin.substring(0, 5);
+      document.getElementById('summary-horaire').textContent = `${debut} – ${fin}`;
+      
+      // Afficher le lieu et la carte si disponible
+      if (slot.lieu) {
+        document.getElementById('lieu-container').style.display = 'block';
+        document.getElementById('summary-lieu').textContent = slot.lieu;
+        
+        // Afficher la carte Google Maps
+        const encodedAddress = encodeURIComponent(slot.lieu);
+        document.getElementById('map-container').innerHTML = `
+          <iframe
+            width="100%"
+            height="200"
+            style="border:0; border-radius: 8px;"
+            loading="lazy"
+            allowfullscreen
+            referrerpolicy="no-referrer-when-downgrade"
+            src="https://www.google.com/maps/embed/v1/place?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&q=${encodedAddress}">
+          </iframe>
+        `;
+      } else {
+        document.getElementById('lieu-container').style.display = 'none';
+      }
+      
+      updateConfirmButton();
+    }
+
+    /**
+     * Active/désactive le bouton de confirmation selon l'état
+     */
+    function updateConfirmButton() {
+      const btn = document.getElementById('confirm-btn');
+      const isComplete = reservationState.prestationId && 
+                        reservationState.date && 
+                        reservationState.heureDebut;
+      
+      btn.disabled = !isComplete;
+    }
+
+    /**
+     * Confirme la réservation
+     */
+    document.getElementById('confirm-btn').addEventListener('click', async function() {
+      if (!reservationState.prestationId || !reservationState.date || !reservationState.heureDebut) {
+        return;
+      }
+      
+      this.disabled = true;
+      this.textContent = 'Réservation en cours...';
+      
+      try {
+        const response = await fetch('/api/reservations', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            prestationId: reservationState.prestationId,
+            date: reservationState.date,
+            heureDebut: reservationState.heureDebut,
+            heureFin: reservationState.heureFin
+          })
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+          showMessage('Réservation confirmée ! 🎉', 'success');
+          setTimeout(() => window.location.reload(), 2000);
+        } else {
+          showMessage(result.message || 'Erreur lors de la réservation', 'error');
+          this.disabled = false;
+          this.textContent = 'Confirmer ce créneau';
+        }
+      } catch (error) {
+        console.error('Erreur réservation:', error);
+        showMessage('Erreur de connexion au serveur', 'error');
+        this.disabled = false;
+        this.textContent = 'Confirmer ce créneau';
+      }
+    });
+
+    /**
+     * Formate une date ISO en français
+     */
+    function formatDate(dateStr) {
+      const date = new Date(dateStr + 'T00:00:00');
+      const jours = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
+      const mois = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+      
+      return `${jours[date.getDay()]} ${date.getDate()} ${mois[date.getMonth()]}`;
+    }
+
+    /**
+     * Affiche un message de succès ou d'erreur
+     */
+    function showMessage(text, type) {
+      const container = document.getElementById('message-container');
+      const div = document.createElement('div');
+      div.className = type === 'success' ? 'success-message' : 'error-message';
+      div.textContent = text;
+      container.innerHTML = '';
+      container.appendChild(div);
+      
+      setTimeout(() => div.remove(), 5000);
+    }
+
+    /**
+     * Vérifie les messages dans l'URL
+     */
+    function checkForMessages() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const msg = urlParams.get('message');
+      
+      if (msg === 'booking_success') {
+        showMessage('Réservation confirmée ! 🎉', 'success');
+      } else if (msg === 'booking_error') {
+        showMessage('Erreur lors de la réservation', 'error');
+      }
+    }
+  </script>
+
+</body>
+</html>

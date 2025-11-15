@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Mon Profil – Kyrl Cut</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body class="app-bg res-bg">
+
+  <div class="res-page">
+
+    <!-- HEADER -->
+    <header class="res-header">
+      <div class="brand">
+        <div class="brand-logo">KC</div>
+        <div>
+          <div class="brand-name">KYRL CUT</div>
+          <div class="brand-subtitle">Espace privé</div>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 10px; align-items: center;">
+        <a href="/reservations" class="nav-btn">Réservations</a>
+        <a href="/profile" class="nav-btn active">Profil</a>
+        <a href="/admin" id="admin-btn" class="nav-btn" style="display: none;">Admin</a>
+        <form action="/api/logout" method="POST" style="margin: 0;">
+          <button class="res-logout-btn" type="submit">Se déconnecter</button>
+        </form>
+      </div>
+    </header>
+
+    <!-- Message -->
+    <div id="message-container"></div>
+
+    <!-- CONTENU -->
+    <main class="res-layout">
+      
+      <!-- PANNEAU GAUCHE : Informations et paramètres -->
+      <section class="res-panel res-panel-main">
+        <h1 class="res-title">Mon profil</h1>
+        <p class="res-subtitle">Gérez vos informations personnelles</p>
+
+        <div class="profile-info">
+          <div class="profile-field">
+            <label>Email</label>
+            <p id="user-email" class="profile-value">—</p>
+          </div>
+
+          <div class="profile-field">
+            <label>Téléphone</label>
+            <p id="user-phone" class="profile-value">—</p>
+          </div>
+
+          <div class="profile-field">
+            <label>Rôle</label>
+            <p id="user-role" class="profile-value">—</p>
+          </div>
+
+          <div class="profile-field">
+            <label>Membre depuis</label>
+            <p id="user-created" class="profile-value">—</p>
+          </div>
+        </div>
+
+        <div class="res-block" style="margin-top: 24px;">
+          <div class="res-block-header">
+            <span class="res-block-label">Modifier le téléphone</span>
+          </div>
+          
+          <form id="phone-form" class="form" style="margin-top: 12px;">
+            <input type="tel" id="phone" name="phone" placeholder="+33 6 12 34 56 78" class="res-input">
+            <button type="submit" class="btn-primary" style="margin-top: 12px;">Enregistrer</button>
+          </form>
+        </div>
+
+        <div class="res-block" style="margin-top: 24px;">
+          <div class="res-block-header">
+            <span class="res-block-label">Changer le mot de passe</span>
+          </div>
+          
+          <form id="password-form" class="form" style="margin-top: 12px;">
+            <input type="password" id="current-password" name="currentPassword" placeholder="Mot de passe actuel" class="res-input" required>
+            <input type="password" id="new-password" name="newPassword" placeholder="Nouveau mot de passe" class="res-input" required minlength="6" style="margin-top: 12px;">
+            <input type="password" id="confirm-password" name="confirmPassword" placeholder="Confirmer le mot de passe" class="res-input" required minlength="6" style="margin-top: 12px;">
+            <button type="submit" class="btn-primary" style="margin-top: 12px;">Changer le mot de passe</button>
+          </form>
+        </div>
+      </section>
+
+      <!-- PANNEAU DROIT : Mes réservations -->
+      <aside class="res-panel res-panel-side">
+        <h2 class="res-side-title">Mes rendez-vous</h2>
+
+        <div class="res-block">
+          <div class="res-block-header">
+            <span class="res-block-label">À venir</span>
+          </div>
+          <div id="upcoming-reservations" style="margin-top: 12px;">
+            <!-- Rempli dynamiquement -->
+          </div>
+        </div>
+
+        <div class="res-block" style="margin-top: 20px;">
+          <div class="res-block-header">
+            <span class="res-block-label">Historique</span>
+          </div>
+          <div id="past-reservations" style="margin-top: 12px;">
+            <!-- Rempli dynamiquement -->
+          </div>
+        </div>
+      </aside>
+
+    </main>
+  </div>
+
+  <!-- Modal de confirmation -->
+  <div id="confirm-modal" class="modal" style="display: none;">
+    <div class="modal-content" style="max-width: 400px;">
+      <h3 id="confirm-title" style="margin-bottom: 15px;">Confirmer l'action</h3>
+      <p id="confirm-message" style="margin-bottom: 20px; color: #666;"></p>
+      <div class="modal-actions">
+        <button class="btn-secondary" onclick="closeConfirmModal(false)">Annuler</button>
+        <button class="btn-primary" id="confirm-ok-btn" onclick="closeConfirmModal(true)">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /**
+     * PAGE DE PROFIL UTILISATEUR
+     * Permet de modifier les informations personnelles et le mot de passe
+     */
+
+    let userData = null;
+
+    /**
+     * Initialisation
+     */
+    document.addEventListener('DOMContentLoaded', async function() {
+      await loadUserData();
+      await loadReservations();
+      setupForms();
+    });
+
+    /**
+     * Charge les données de l'utilisateur
+     */
+    async function loadUserData() {
+      try {
+        const response = await fetch('/api/user/me');
+        userData = await response.json();
+        
+        // Afficher les informations
+        document.getElementById('user-email').textContent = userData.email;
+        document.getElementById('user-phone').textContent = userData.phone || 'Non renseigné';
+        document.getElementById('user-role').textContent = userData.role === 'admin' ? 'Administrateur' : 'Utilisateur';
+        document.getElementById('user-created').textContent = formatDate(userData.created_at);
+        document.getElementById('phone').value = userData.phone || '';
+        
+        // Afficher le bouton admin si nécessaire
+        if (userData.role === 'admin') {
+          document.getElementById('admin-btn').style.display = 'inline-block';
+        }
+      } catch (error) {
+        console.error('Erreur chargement profil:', error);
+        showMessage('Erreur de chargement du profil', 'error');
+      }
+    }
+
+    /**
+     * Charge les réservations de l'utilisateur
+     */
+    async function loadReservations() {
+      const upcomingContainer = document.getElementById('upcoming-reservations');
+      const pastContainer = document.getElementById('past-reservations');
+      
+      upcomingContainer.innerHTML = '<p class="empty-state-compact">Chargement...</p>';
+      pastContainer.innerHTML = '<p class="empty-state-compact">Chargement...</p>';
+      
+      try {
+        const response = await fetch('/api/user/reservations');
+        
+        if (!response.ok) {
+          throw new Error('Erreur réseau');
+        }
+        
+        const reservations = await response.json();
+        console.log('Réservations chargées:', reservations);
+        
+        const now = new Date();
+        const upcoming = reservations.filter(r => {
+          try {
+            // Extraire la partie date et créer la date complète avec l'heure
+            let datePart = r.date_reservation;
+            if (typeof datePart === 'string') {
+              datePart = datePart.split('T')[0]; // Extraire YYYY-MM-DD
+            }
+            const resDate = new Date(datePart + 'T' + r.heure_debut);
+            console.log('Filtrage réservation:', r.id, 'datePart:', datePart, 'heure:', r.heure_debut, 'resDate:', resDate, 'now:', now, 'future:', resDate > now);
+            return resDate > now && r.statut === 'confirmee';
+          } catch (e) {
+            console.error('Erreur filtrage réservation:', e, r);
+            return false;
+          }
+        });
+        const past = reservations.filter(r => {
+          try {
+            let datePart = r.date_reservation;
+            if (typeof datePart === 'string') {
+              datePart = datePart.split('T')[0];
+            }
+            const resDate = new Date(datePart + 'T' + r.heure_debut);
+            return resDate <= now || r.statut !== 'confirmee';
+          } catch (e) {
+            console.error('Erreur filtrage réservation passée:', e, r);
+            return true; // En cas d'erreur, considérer comme passée
+          }
+        });
+        
+        console.log('Upcoming:', upcoming.length, 'Past:', past.length);
+        displayUpcomingReservations(upcoming);
+        displayPastReservations(past);
+      } catch (error) {
+        console.error('Erreur chargement réservations:', error);
+        upcomingContainer.innerHTML = '<p class="empty-state-compact">Erreur de chargement</p>';
+        pastContainer.innerHTML = '<p class="empty-state-compact">Erreur de chargement</p>';
+      }
+    }
+
+    /**
+     * Affiche les réservations à venir
+     */
+    function displayUpcomingReservations(reservations) {
+      const container = document.getElementById('upcoming-reservations');
+      
+      if (reservations.length === 0) {
+        container.innerHTML = '<p class="empty-state-compact">Aucun rendez-vous prévu</p>';
+        return;
+      }
+      
+      container.innerHTML = '';
+      reservations.forEach(res => {
+        const div = document.createElement('div');
+        div.className = 'reservation-card';
+        
+        // S'assurer que la date est valide
+        const dateFormatted = res.date_reservation ? formatDateFull(res.date_reservation) : 'Date non disponible';
+        const heureDebut = res.heure_debut ? res.heure_debut.substring(0,5) : '—';
+        const heureFin = res.heure_fin ? res.heure_fin.substring(0,5) : '—';
+        
+        div.innerHTML = `
+          <div class="reservation-card-header">
+            <strong>${res.prestation_nom || 'Prestation'}</strong>
+            <span class="reservation-price">${res.prestation_prix || 20} €</span>
+          </div>
+          <div class="reservation-card-body">
+            <p>📅 ${dateFormatted}</p>
+            <p>🕐 ${heureDebut} - ${heureFin}</p>
+            ${res.lieu ? `<p style="color: #666; font-size: 13px; margin-top: 5px;">📍 ${res.lieu}</p>` : ''}
+            <button class="btn-cancel" onclick="cancelReservation(${res.id})" style="margin-top: 10px; padding: 6px 12px; background: #571938; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px;">Annuler</button>
+          </div>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    /**
+     * Affiche l'historique des réservations
+     */
+    function displayPastReservations(reservations) {
+      const container = document.getElementById('past-reservations');
+      
+      if (reservations.length === 0) {
+        container.innerHTML = '<p class="empty-state-compact">Aucun historique</p>';
+        return;
+      }
+      
+      container.innerHTML = '';
+      const recent = reservations.slice(0, 5); // Afficher les 5 dernières
+      
+      recent.forEach(res => {
+        const div = document.createElement('div');
+        div.className = 'reservation-card past';
+        
+        // S'assurer que la date est valide
+        const dateFormatted = res.date_reservation ? formatDateFull(res.date_reservation) : 'Date non disponible';
+        const heureDebut = res.heure_debut ? res.heure_debut.substring(0,5) : '—';
+        
+        div.innerHTML = `
+          <div class="reservation-card-header">
+            <strong>${res.prestation_nom || 'Prestation'}</strong>
+            <span class="reservation-status ${res.statut}">${res.statut === 'confirmee' ? 'terminée' : res.statut}</span>
+          </div>
+          <div class="reservation-card-body">
+            <p>📅 ${dateFormatted}</p>
+            <p>🕐 ${heureDebut}</p>
+            ${res.lieu ? `<p style="color: #666; font-size: 13px; margin-top: 5px;">📍 ${res.lieu}</p>` : ''}
+          </div>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    /**
+     * Formate une date complète
+     */
+    function formatDateFull(dateStr) {
+      if (!dateStr) {
+        return 'Date invalide';
+      }
+      
+      try {
+        let date;
+        
+        // Si c'est déjà un objet Date
+        if (dateStr instanceof Date) {
+          date = dateStr;
+        } 
+        // Si c'est un timestamp
+        else if (typeof dateStr === 'number') {
+          date = new Date(dateStr);
+        }
+        // Si c'est une string au format ISO (YYYY-MM-DD ou datetime ISO)
+        else if (typeof dateStr === 'string') {
+          // Extraire juste la partie date (YYYY-MM-DD)
+          const datePart = dateStr.split('T')[0];
+          const [year, month, day] = datePart.split('-').map(Number);
+          
+          // Créer la date en heure locale sans conversion UTC
+          date = new Date(year, month - 1, day);
+        }
+        else {
+          return 'Date invalide';
+        }
+        
+        // Vérifier si la date est valide
+        if (isNaN(date.getTime())) {
+          return 'Date invalide';
+        }
+        
+        const jours = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
+        const mois = ['jan', 'fév', 'mar', 'avr', 'mai', 'juin', 'juil', 'août', 'sep', 'oct', 'nov', 'déc'];
+        return `${jours[date.getDay()]} ${date.getDate()} ${mois[date.getMonth()]}`;
+      } catch (e) {
+        console.error('Erreur formatage date:', e, dateStr);
+        return 'Date invalide';
+      }
+    }
+
+    /**
+     * Configuration des formulaires
+     */
+    function setupForms() {
+      // Formulaire téléphone
+      document.getElementById('phone-form').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const phone = document.getElementById('phone').value;
+        const btn = this.querySelector('button[type="submit"]');
+        const originalText = btn.textContent;
+        
+        btn.disabled = true;
+        btn.textContent = 'Enregistrement...';
+        
+        try {
+          const response = await fetch('/api/user/profile', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ phone })
+          });
+          
+          const result = await response.json();
+          
+          if (response.ok) {
+            showMessage('Téléphone mis à jour !', 'success');
+            await loadUserData(); // Recharger les données
+          } else {
+            showMessage(result.error || 'Erreur de mise à jour', 'error');
+          }
+        } catch (error) {
+          console.error('Erreur:', error);
+          showMessage('Erreur de connexion au serveur', 'error');
+        } finally {
+          btn.disabled = false;
+          btn.textContent = originalText;
+        }
+      });
+
+      // Formulaire mot de passe
+      document.getElementById('password-form').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const currentPassword = document.getElementById('current-password').value;
+        const newPassword = document.getElementById('new-password').value;
+        const confirmPassword = document.getElementById('confirm-password').value;
+        
+        // Vérifier que les mots de passe correspondent
+        if (newPassword !== confirmPassword) {
+          showMessage('Les nouveaux mots de passe ne correspondent pas', 'error');
+          return;
+        }
+        
+        if (newPassword.length < 6) {
+          showMessage('Le mot de passe doit contenir au moins 6 caractères', 'error');
+          return;
+        }
+        
+        const btn = this.querySelector('button[type="submit"]');
+        const originalText = btn.textContent;
+        
+        btn.disabled = true;
+        btn.textContent = 'Modification...';
+        
+        try {
+          const response = await fetch('/api/user/password', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ currentPassword, newPassword })
+          });
+          
+          const result = await response.json();
+          
+          if (response.ok) {
+            showMessage('Mot de passe modifié avec succès !', 'success');
+            // Réinitialiser le formulaire
+            this.reset();
+          } else {
+            showMessage(result.error || 'Erreur de modification', 'error');
+          }
+        } catch (error) {
+          console.error('Erreur:', error);
+          showMessage('Erreur de connexion au serveur', 'error');
+        } finally {
+          btn.disabled = false;
+          btn.textContent = originalText;
+        }
+      });
+    }
+
+    /**
+     * Affiche un modal de confirmation personnalisé
+     */
+    function showConfirm(title, message) {
+      return new Promise((resolve) => {
+        document.getElementById('confirm-title').textContent = title;
+        document.getElementById('confirm-message').textContent = message;
+        document.getElementById('confirm-modal').style.display = 'flex';
+        
+        window.confirmResolve = resolve;
+      });
+    }
+
+    /**
+     * Ferme le modal de confirmation
+     */
+    function closeConfirmModal(result) {
+      document.getElementById('confirm-modal').style.display = 'none';
+      if (window.confirmResolve) {
+        window.confirmResolve(result);
+        window.confirmResolve = null;
+      }
+    }
+
+    /**
+     * Annule une réservation
+     */
+    async function cancelReservation(reservationId) {
+      const confirmed = await showConfirm(
+        'Annuler le rendez-vous',
+        'Êtes-vous sûr de vouloir annuler ce rendez-vous ?'
+      );
+      
+      if (!confirmed) {
+        return;
+      }
+      
+      try {
+        const response = await fetch(`/api/user/reservations/${reservationId}`, {
+          method: 'DELETE'
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+          showMessage('Rendez-vous annulé avec succès', 'success');
+          await loadReservations();
+        } else {
+          showMessage(result.error || 'Erreur lors de l\'annulation', 'error');
+        }
+      } catch (error) {
+        console.error('Erreur annulation:', error);
+        showMessage('Erreur de connexion au serveur', 'error');
+      }
+    }
+
+    /**
+     * Formate une date
+     */
+    function formatDate(dateStr) {
+      const date = new Date(dateStr);
+      const options = { year: 'numeric', month: 'long', day: 'numeric' };
+      return date.toLocaleDateString('fr-FR', options);
+    }
+
+    /**
+     * Affiche un message
+     */
+    function showMessage(text, type) {
+      const container = document.getElementById('message-container');
+      const div = document.createElement('div');
+      div.className = type === 'success' ? 'success-message' : 'error-message';
+      div.textContent = text;
+      container.innerHTML = '';
+      container.appendChild(div);
+      
+      setTimeout(() => div.remove(), 5000);
+    }
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,35 @@
+{
+  "name": "haircut-kyrian",
+  "version": "1.0.0",
+  "description": "Système de réservation de rendez-vous pour salon de coiffure Kyrian Mahagne",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "init-db": "node scripts/init-database.js",
+    "create-admin": "node scripts/create-admin.js",
+    "clean-db": "node scripts/clean-database.js"
+  },
+  "keywords": [
+    "reservation",
+    "salon",
+    "coiffure",
+    "appointment"
+  ],
+  "author": "Kyrian Mahagne",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "express-session": "^1.18.2",
+    "googleapis": "^166.0.0",
+    "mysql2": "^3.15.3",
+    "node-cron": "^4.2.1",
+    "nodemailer": "^7.0.10"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}

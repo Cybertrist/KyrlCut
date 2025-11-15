@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Connexion – Espace privé</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body class="app-bg">
+
+  <div class="card">
+
+    <div class="brand">
+      <div class="brand-logo">KC</div>
+      <div>
+        <div class="brand-name">KYRL CUT</div>
+        <div class="brand-subtitle">Espace privé</div>
+      </div>
+    </div>
+
+    <h1 class="title">Connexion</h1>
+    <p class="page-subtitle">Accède à ton espace de réservation.</p>
+
+    <!-- Conteneur pour les messages d'erreur (rempli dynamiquement par JavaScript) -->
+    <div id="error-container"></div>
+
+    <form action="/api/login" method="POST" class="form">
+
+      <label>Email</label>
+      <input type="email" name="email" required>
+
+      <label>Mot de passe</label>
+      <input type="password" name="password" required>
+
+      <button class="btn-primary">Se connecter</button>
+
+    </form>
+
+    <p class="small-text">
+      Pas de compte ? <a href="/register">Créer un compte</a>
+    </p>
+
+  </div>
+
+  <script>
+    /**
+     * Gestion de l'affichage des messages d'erreur sur la page de connexion
+     * 
+     * Ce script lit le paramètre 'error' de l'URL et affiche un message d'erreur
+     * approprié à l'utilisateur de manière élégante et contextuelle.
+     */
+    
+    // Fonction pour extraire les paramètres de l'URL
+    function getUrlParameter(name) {
+      // Utilisation de URLSearchParams pour une manipulation propre des paramètres
+      const urlParams = new URLSearchParams(window.location.search);
+      return urlParams.get(name);
+    }
+
+    // Fonction pour afficher un message d'erreur
+    function displayError(message) {
+      const errorContainer = document.getElementById('error-container');
+      
+      // Création d'un élément div pour le message d'erreur
+      const errorDiv = document.createElement('div');
+      errorDiv.className = 'error-message';
+      errorDiv.textContent = message;
+      
+      // Ajout du message au conteneur
+      errorContainer.appendChild(errorDiv);
+    }
+
+    // Dictionnaire des messages d'erreur pour une maintenance facile
+    const errorMessages = {
+      'invalid_credentials': 'Email ou mot de passe incorrect. Veuillez réessayer.',
+      'server_error': 'Une erreur serveur est survenue. Veuillez réessayer plus tard.',
+      'login_required': 'Vous devez être connecté pour accéder à cette page.'
+    };
+
+    // Au chargement de la page, vérifier s'il y a une erreur à afficher
+    document.addEventListener('DOMContentLoaded', function() {
+      const errorCode = getUrlParameter('error');
+      
+      // Si un code d'erreur existe et est reconnu, afficher le message
+      if (errorCode && errorMessages[errorCode]) {
+        displayError(errorMessages[errorCode]);
+      }
+    });
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Administration – Kyrl Cut</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body class="app-bg res-bg">
+
+  <div class="res-page">
+
+    <!-- HEADER -->
+    <header class="res-header">
+      <div class="brand">
+        <div class="brand-logo">KC</div>
+        <div>
+          <div class="brand-name">KYRL CUT</div>
+          <div class="brand-subtitle">Espace privé</div>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 10px; align-items: center;">
+        <a href="/reservations" class="nav-btn">Réservations</a>
+        <a href="/profile" class="nav-btn">Profil</a>
+        <a href="/admin" class="nav-btn active">Admin</a>
+        <form action="/api/logout" method="POST" style="margin: 0;">
+          <button class="res-logout-btn" type="submit">Se déconnecter</button>
+        </form>
+      </div>
+    </header>
+
+    <!-- Message de confirmation/erreur -->
+    <div id="message-container"></div>
+
+    <!-- NAVIGATION DES ONGLETS -->
+    <div class="admin-tabs">
+      <button class="admin-tab active" data-tab="reservations">Rendez-vous</button>
+      <button class="admin-tab" data-tab="slots">Créneaux disponibles</button>
+      <button class="admin-tab" data-tab="codes">Codes d'invitation</button>
+    </div>
+
+    <!-- CONTENU DES ONGLETS -->
+    
+    <!-- ONGLET 1 : RENDEZ-VOUS -->
+    <div id="tab-reservations" class="admin-tab-content active">
+      <div class="res-panel">
+        <h2 class="res-title">Gestion des rendez-vous</h2>
+        <p class="res-subtitle">Liste de tous les rendez-vous confirmés</p>
+
+        <!-- Statistiques -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 25px;">
+          <div style="background: rgba(139, 92, 246, 0.1); border: 1px solid rgba(139, 92, 246, 0.3); border-radius: 12px; padding: 20px;">
+            <div style="font-size: 13px; color: #8a7a9e; margin-bottom: 5px;">Total rendez-vous</div>
+            <div style="font-size: 28px; font-weight: bold; color: #c7b6e8;" id="stat-total">0</div>
+          </div>
+          <div style="background: rgba(34, 197, 94, 0.1); border: 1px solid rgba(34, 197, 94, 0.3); border-radius: 12px; padding: 20px;">
+            <div style="font-size: 13px; color: #8a7a9e; margin-bottom: 5px;">Rendez-vous terminés</div>
+            <div style="font-size: 28px; font-weight: bold; color: #22c55e;" id="stat-completed">0</div>
+          </div>
+          <div style="background: rgba(234, 179, 8, 0.1); border: 1px solid rgba(234, 179, 8, 0.3); border-radius: 12px; padding: 20px;">
+            <div style="font-size: 13px; color: #8a7a9e; margin-bottom: 5px;">Rendez-vous futurs</div>
+            <div style="font-size: 28px; font-weight: bold; color: #eab308;" id="stat-pending">0</div>
+          </div>
+          <div style="background: rgba(139, 92, 246, 0.15); border: 1px solid rgba(139, 92, 246, 0.4); border-radius: 12px; padding: 20px;">
+            <div style="font-size: 13px; color: #8a7a9e; margin-bottom: 5px;">Revenus générés</div>
+            <div style="font-size: 28px; font-weight: bold; color: #c7b6e8;"><span id="stat-revenue">0</span> €</div>
+          </div>
+        </div>
+
+        <div class="admin-filter">
+          <label>Filtrer par date:</label>
+          <input type="date" id="filter-date" class="admin-input">
+          <button class="btn-secondary" onclick="loadReservations()">Actualiser</button>
+        </div>
+
+        <div id="reservations-list" class="admin-list">
+          <!-- Rempli dynamiquement -->
+        </div>
+      </div>
+    </div>
+
+    <!-- ONGLET 2 : CRÉNEAUX DISPONIBLES -->
+    <div id="tab-slots" class="admin-tab-content">
+      <div class="res-panel">
+        <h2 class="res-title">Gestion des créneaux</h2>
+        <p class="res-subtitle">Définir les horaires de disponibilité par jour de la semaine</p>
+
+        <div class="admin-filter" style="margin-bottom: 20px; display: flex; align-items: center; gap: 15px;">
+          <button onclick="changeWeek(-1)" class="btn-secondary" style="padding: 8px 16px;">◀ Semaine précédente</button>
+          <div style="flex: 1; text-align: center;">
+            <div style="font-size: 16px; font-weight: bold; color: #c7b6e8;" id="week-title">Semaine actuelle</div>
+            <div style="font-size: 13px; color: #8a7a9e; margin-top: 4px;" id="week-dates"></div>
+          </div>
+          <button onclick="changeWeek(1)" class="btn-secondary" style="padding: 8px 16px;">Semaine suivante ▶</button>
+        </div>
+
+        <div class="admin-days-grid">
+          <div class="admin-day-card" data-day="Lundi">
+            <h3>Lundi</h3>
+            <div id="slots-Lundi" class="admin-slot-list"></div>
+            <button class="btn-add" onclick="addSlot('Lundi')">+ Ajouter un créneau</button>
+          </div>
+
+          <div class="admin-day-card" data-day="Mardi">
+            <h3>Mardi</h3>
+            <div id="slots-Mardi" class="admin-slot-list"></div>
+            <button class="btn-add" onclick="addSlot('Mardi')">+ Ajouter un créneau</button>
+          </div>
+
+          <div class="admin-day-card" data-day="Mercredi">
+            <h3>Mercredi</h3>
+            <div id="slots-Mercredi" class="admin-slot-list"></div>
+            <button class="btn-add" onclick="addSlot('Mercredi')">+ Ajouter un créneau</button>
+          </div>
+
+          <div class="admin-day-card" data-day="Jeudi">
+            <h3>Jeudi</h3>
+            <div id="slots-Jeudi" class="admin-slot-list"></div>
+            <button class="btn-add" onclick="addSlot('Jeudi')">+ Ajouter un créneau</button>
+          </div>
+
+          <div class="admin-day-card" data-day="Vendredi">
+            <h3>Vendredi</h3>
+            <div id="slots-Vendredi" class="admin-slot-list"></div>
+            <button class="btn-add" onclick="addSlot('Vendredi')">+ Ajouter un créneau</button>
+          </div>
+
+          <div class="admin-day-card" data-day="Samedi">
+            <h3>Samedi</h3>
+            <div id="slots-Samedi" class="admin-slot-list"></div>
+            <button class="btn-add" onclick="addSlot('Samedi')">+ Ajouter un créneau</button>
+          </div>
+
+          <div class="admin-day-card" data-day="Dimanche">
+            <h3>Dimanche</h3>
+            <div id="slots-Dimanche" class="admin-slot-list"></div>
+            <button class="btn-add" onclick="addSlot('Dimanche')">+ Ajouter un créneau</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ONGLET 3 : CODES D'INVITATION -->
+    <div id="tab-codes" class="admin-tab-content">
+      <div class="res-panel">
+        <h2 class="res-title">Codes d'invitation</h2>
+        <p class="res-subtitle">Générer et gérer les codes d'accès pour nouveaux utilisateurs</p>
+
+        <div class="admin-code-generator" style="background: rgba(199, 182, 232, 0.05); padding: 20px; border-radius: 12px; margin-bottom: 30px;">
+          <h3 style="margin: 0 0 15px 0; font-size: 16px;">Générer un nouveau code</h3>
+          
+          <div style="display: flex; gap: 15px; align-items: end; flex-wrap: wrap;">
+            <div style="flex: 1; min-width: 200px;">
+              <label style="display: block; margin-bottom: 5px; font-size: 13px; color: #c7b6e8;">Préfixe (optionnel)</label>
+              <input type="text" id="code-prefix" placeholder="KYRL" class="admin-input" style="text-transform: uppercase;" maxlength="10">
+            </div>
+            
+            <div style="flex: 1; min-width: 150px;">
+              <label style="display: block; margin-bottom: 5px; font-size: 13px; color: #c7b6e8;">Nombre d'utilisations</label>
+              <input type="number" id="code-max-uses" value="1" min="1" class="admin-input">
+            </div>
+            
+            <button class="btn-primary" onclick="generateCode()" style="height: 42px;">Générer</button>
+          </div>
+        </div>
+
+        <h3 style="margin: 0 0 15px 0; font-size: 16px;">Codes existants</h3>
+        <div id="codes-list" class="admin-list">
+          <!-- Rempli dynamiquement -->
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- MODAL POUR AJOUTER UN CRÉNEAU -->
+  <div id="slot-modal" class="modal">
+    <div class="modal-content">
+      <h3>Ajouter un créneau</h3>
+      <p id="modal-day-name"></p>
+      
+      <label>Heure de début:</label>
+      <input type="time" id="modal-heure-debut" class="admin-input">
+      
+      <label>Heure de fin:</label>
+      <input type="time" id="modal-heure-fin" class="admin-input">
+      
+      <label>Lieu (optionnel):</label>
+      <input type="text" id="modal-lieu" class="admin-input" placeholder="Ex: 123 Rue de Paris, Ville">
+      
+      <div class="modal-actions">
+        <button class="btn-secondary" onclick="closeSlotModal()">Annuler</button>
+        <button class="btn-primary" onclick="saveSlot()">Enregistrer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de confirmation -->
+  <div id="confirm-modal" class="modal" style="display: none;">
+    <div class="modal-content" style="max-width: 400px;">
+      <h3 id="confirm-title" style="margin-bottom: 15px;">Confirmer l'action</h3>
+      <p id="confirm-message" style="margin-bottom: 20px; color: #666;"></p>
+      <div class="modal-actions">
+        <button class="btn-secondary" onclick="closeConfirmModal(false)">Annuler</button>
+        <button class="btn-primary" id="confirm-ok-btn" onclick="closeConfirmModal(true)">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /**
+     * PANNEAU D'ADMINISTRATION
+     * Gère les rendez-vous, les créneaux disponibles et les jours de fermeture
+     */
+
+    let currentModalDay = null;
+
+    let currentWeek = null;
+
+    /**
+     * Affiche un modal de confirmation personnalisé
+     */
+    function showConfirm(title, message) {
+      return new Promise((resolve) => {
+        document.getElementById('confirm-title').textContent = title;
+        document.getElementById('confirm-message').textContent = message;
+        document.getElementById('confirm-modal').style.display = 'flex';
+        
+        window.confirmResolve = resolve;
+      });
+    }
+
+    /**
+     * Ferme le modal de confirmation
+     */
+    function closeConfirmModal(result) {
+      document.getElementById('confirm-modal').style.display = 'none';
+      if (window.confirmResolve) {
+        window.confirmResolve(result);
+        window.confirmResolve = null;
+      }
+    }
+
+    /**
+     * Initialisation au chargement de la page
+     */
+    document.addEventListener('DOMContentLoaded', function() {
+      setupTabs();
+      currentWeek = 0;
+      updateWeekDisplay();
+      loadReservations();
+      loadSlots();
+      loadCodes();
+    });
+
+    /**
+     * Obtient le numéro de semaine ISO
+     */
+    function getWeekNumber(date) {
+      const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+      const dayNum = d.getUTCDay() || 7;
+      d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+      const yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
+      return Math.ceil((((d - yearStart) / 86400000) + 1)/7);
+    }
+
+    /**
+     * Obtient les dates de début et fin de semaine
+     */
+    function getWeekDates(date) {
+      const d = new Date(date);
+      const day = d.getDay();
+      const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Lundi
+      const start = new Date(d.setDate(diff));
+      const end = new Date(start);
+      end.setDate(start.getDate() + 6);
+      
+      return {
+        start: start.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' }),
+        end: end.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })
+      };
+    }
+
+    /**
+     * Change la semaine sélectionnée
+     */
+    function changeWeek(direction) {
+      const newWeek = currentWeek + direction;
+      
+      // Limiter à la semaine actuelle et la semaine prochaine uniquement
+      if (newWeek < 0 || newWeek > 1) {
+        showMessage(newWeek < 0 ? 'Vous ne pouvez pas modifier les créneaux passés' : 'Vous ne pouvez gérer que 2 semaines à l\'avance', 'error');
+        return;
+      }
+      
+      currentWeek = newWeek;
+      updateWeekDisplay();
+      loadSlots();
+    }
+
+    /**
+     * Met à jour l'affichage de la semaine
+     */
+    function updateWeekDisplay() {
+      const today = new Date();
+      const weekDate = new Date(today);
+      weekDate.setDate(today.getDate() + (currentWeek * 7));
+      
+      const { start, end } = getWeekDates(weekDate);
+      const weekNumber = getWeekNumber(weekDate);
+      const year = weekDate.getFullYear();
+      
+      document.getElementById('week-title').textContent = currentWeek === 0 ? 'Semaine actuelle' : 'Semaine prochaine';
+      document.getElementById('week-dates').textContent = `${start} - ${end} (Semaine ${weekNumber} - ${year})`;
+    }
+
+    /**
+     * Met à jour les titres des cartes de jours avec les dates
+     */
+    function updateDayTitles() {
+      const today = new Date();
+      const weekDate = new Date(today);
+      weekDate.setDate(today.getDate() + (currentWeek * 7));
+      
+      // Trouver le lundi de cette semaine
+      const day = weekDate.getDay();
+      const diff = day === 0 ? -6 : 1 - day;
+      const monday = new Date(weekDate);
+      monday.setDate(weekDate.getDate() + diff);
+      
+      const jours = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
+      
+      jours.forEach((jour, index) => {
+        const date = new Date(monday);
+        date.setDate(monday.getDate() + index);
+        
+        const card = document.querySelector(`.admin-day-card[data-day="${jour}"]`);
+        if (card) {
+          const h3 = card.querySelector('h3');
+          const dateStr = `${date.getDate()}/${(date.getMonth()+1).toString().padStart(2,'0')}`;
+          h3.textContent = `${jour} ${dateStr}`;
+        }
+      });
+    }
+
+    /**
+     * Configuration du système d'onglets
+     */
+    function setupTabs() {
+      const tabs = document.querySelectorAll('.admin-tab');
+      
+      tabs.forEach(tab => {
+        tab.addEventListener('click', function() {
+          const tabName = this.dataset.tab;
+          
+          // Changer l'onglet actif
+          tabs.forEach(t => t.classList.remove('active'));
+          this.classList.add('active');
+          
+          // Changer le contenu actif
+          document.querySelectorAll('.admin-tab-content').forEach(content => {
+            content.classList.remove('active');
+          });
+          document.getElementById(`tab-${tabName}`).classList.add('active');
+        });
+      });
+    }
+
+    /**
+     * GESTION DES RENDEZ-VOUS
+     */
+
+    /**
+     * Charge la liste des rendez-vous
+     */
+    async function loadReservations() {
+      const container = document.getElementById('reservations-list');
+      const filterDate = document.getElementById('filter-date').value;
+      
+      container.innerHTML = '<p class="loading">Chargement...</p>';
+      
+      try {
+        const url = filterDate ? `/api/admin/reservations?date=${filterDate}` : '/api/admin/reservations';
+        const response = await fetch(url);
+        const reservations = await response.json();
+        
+        if (reservations.length === 0) {
+          container.innerHTML = '<p class="empty-state">Aucun rendez-vous trouvé</p>';
+          return;
+        }
+        
+        container.innerHTML = '';
+        
+        // Calculer les statistiques
+        const stats = {
+          total: reservations.length,
+          completed: reservations.filter(r => r.statut === 'terminee').length,
+          pending: reservations.filter(r => r.statut === 'confirmee').length,
+          revenue: reservations.filter(r => r.statut === 'terminee').reduce((sum, r) => sum + parseFloat(r.prestation_prix || 20), 0)
+        };
+        
+        // Mettre à jour les statistiques
+        document.getElementById('stat-total').textContent = stats.total;
+        document.getElementById('stat-completed').textContent = stats.completed;
+        document.getElementById('stat-pending').textContent = stats.pending;
+        document.getElementById('stat-revenue').textContent = Math.round(stats.revenue);
+        
+        reservations.forEach(res => {
+          const card = document.createElement('div');
+          card.className = 'admin-reservation-card';
+          card.innerHTML = `
+            <div class="admin-res-header">
+              <span class="admin-res-date">${formatDateFull(res.date_reservation)} à ${res.heure_debut.substring(0,5)}</span>
+              <span class="admin-res-status status-${res.statut}">${res.statut}</span>
+            </div>
+            <div class="admin-res-body">
+              <p><strong>${res.prestation_nom}</strong> (${res.prestation_duree} min)</p>
+              <p>Client: ${res.user_email} - ${res.user_phone || 'Pas de téléphone'}</p>
+              ${res.lieu ? `<p style="color: #888; font-size: 13px;">Lieu: ${res.lieu}</p>` : ''}
+              ${res.notes ? `<p class="admin-res-notes">Note: ${res.notes}</p>` : ''}
+            </div>
+            <div class="admin-res-actions">
+              ${res.statut === 'confirmee' ? `
+                <button class="btn-small btn-danger" onclick="cancelReservation(${res.id})">Annuler</button>
+                <button class="btn-small btn-success" onclick="completeReservation(${res.id})">Terminer</button>
+              ` : ''}
+              <button class="btn-small btn-secondary" onclick="deleteReservation(${res.id})">Supprimer</button>
+            </div>
+          `;
+          container.appendChild(card);
+        });
+        
+      } catch (error) {
+        console.error('Erreur chargement réservations:', error);
+        container.innerHTML = '<p class="error-state">Erreur de chargement</p>';
+      }
+    }
+
+    /**
+     * Annule un rendez-vous
+     */
+    async function cancelReservation(id) {
+      const confirmed = await showConfirm('Annuler le rendez-vous', 'Êtes-vous sûr de vouloir annuler ce rendez-vous ?');
+      if (!confirmed) return;
+      
+      try {
+        await fetch(`/api/admin/reservations/${id}/cancel`, { method: 'PUT' });
+        showMessage('Rendez-vous annulé', 'success');
+        loadReservations();
+      } catch (error) {
+        showMessage('Erreur lors de l\'annulation', 'error');
+      }
+    }
+
+    /**
+     * Marque un rendez-vous comme terminé
+     */
+    async function completeReservation(id) {
+      try {
+        await fetch(`/api/admin/reservations/${id}/complete`, { method: 'PUT' });
+        showMessage('Rendez-vous marqué comme terminé', 'success');
+        loadReservations();
+      } catch (error) {
+        showMessage('Erreur lors de la mise à jour', 'error');
+      }
+    }
+
+    /**
+     * Supprime définitivement un rendez-vous
+     */
+    async function deleteReservation(id) {
+      const confirmed = await showConfirm('Supprimer le rendez-vous', 'Supprimer définitivement ce rendez-vous ? Cette action est irréversible.');
+      if (!confirmed) return;
+      
+      try {
+        await fetch(`/api/admin/reservations/${id}`, { method: 'DELETE' });
+        showMessage('Rendez-vous supprimé', 'success');
+        loadReservations();
+      } catch (error) {
+        showMessage('Erreur lors de la suppression', 'error');
+      }
+    }
+
+    /**
+     * GESTION DES CRÉNEAUX
+     */
+
+    /**
+     * Charge tous les créneaux disponibles pour la semaine sélectionnée
+     */
+    async function loadSlots() {
+      try {
+        // Calculer les dates de la semaine sélectionnée
+        const today = new Date();
+        const weekStart = new Date(today);
+        weekStart.setDate(today.getDate() - today.getDay() + 1 + (currentWeek * 7));
+        
+        const startDate = weekStart.toISOString().split('T')[0];
+        
+        const weekEnd = new Date(weekStart);
+        weekEnd.setDate(weekStart.getDate() + 6);
+        const endDate = weekEnd.toISOString().split('T')[0];
+        
+        // Charger les créneaux pour cette plage de dates
+        const response = await fetch(`/api/admin/slots?startDate=${startDate}&endDate=${endDate}`);
+        const slots = await response.json();
+        
+        // Mettre à jour les titres des cartes avec les dates de la semaine sélectionnée
+        updateDayTitles();
+        
+        // Grouper les créneaux par date
+        const slotsByDate = {};
+        slots.forEach(slot => {
+          const date = slot.date_specifique;
+          if (!slotsByDate[date]) {
+            slotsByDate[date] = [];
+          }
+          slotsByDate[date].push(slot);
+        });
+        
+        // Réinitialiser et remplir chaque jour
+        const days = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
+        
+        for (let i = 0; i < 7; i++) {
+          const dayDate = new Date(weekStart);
+          dayDate.setDate(weekStart.getDate() + i);
+          const dateStr = dayDate.toISOString().split('T')[0];
+          
+          const dayName = days[i];
+          const container = document.getElementById(`slots-${dayName}`);
+          container.innerHTML = '';
+          container.dataset.date = dateStr; // Stocker la date dans le conteneur
+          
+          const daySlots = slotsByDate[dateStr] || [];
+          
+          if (daySlots.length === 0) {
+            container.innerHTML = '<p style="color: #999; font-size: 12px; text-align: center; padding: 20px;">Aucun créneau</p>';
+          } else {
+            daySlots.forEach(slot => {
+              const slotDiv = document.createElement('div');
+              slotDiv.className = `admin-slot-item ${slot.actif ? '' : 'inactive'}`;
+              slotDiv.innerHTML = `
+                <div style="flex: 1;">
+                  <div>${slot.heure_debut.substring(0,5)} - ${slot.heure_fin.substring(0,5)}</div>
+                  ${slot.lieu ? `<small style="color: #666;">📍 ${slot.lieu}</small>` : ''}
+                </div>
+                <div class="admin-slot-actions">
+                  <button class="btn-icon" onclick="toggleSlot(${slot.id}, ${!slot.actif})" title="${slot.actif ? 'Désactiver' : 'Activer'}">
+                    ${slot.actif ? '⏸' : '▶'}
+                  </button>
+                  <button class="btn-icon btn-danger" onclick="deleteSlot(${slot.id})" title="Supprimer">✕</button>
+                </div>
+              `;
+              container.appendChild(slotDiv);
+            });
+          }
+        }
+        
+      } catch (error) {
+        console.error('Erreur chargement créneaux:', error);
+      }
+    }
+
+    /**
+     * Ouvre le modal pour ajouter un créneau
+     */
+    function addSlot(day) {
+      const container = document.getElementById(`slots-${day}`);
+      const date = container.dataset.date;
+      
+      currentModalDay = { day, date };
+      document.getElementById('modal-day-name').textContent = `${day} - ${new Date(date + 'T12:00:00').toLocaleDateString('fr-FR')}`;
+      document.getElementById('modal-heure-debut').value = '10:00';
+      document.getElementById('modal-heure-fin').value = '11:00';
+      document.getElementById('slot-modal').style.display = 'flex';
+    }
+
+    /**
+     * Ferme le modal
+     */
+    function closeSlotModal() {
+      document.getElementById('slot-modal').style.display = 'none';
+      currentModalDay = null;
+    }
+
+    /**
+     * Enregistre un nouveau créneau
+     */
+    async function saveSlot() {
+      const heureDebut = document.getElementById('modal-heure-debut').value;
+      const heureFin = document.getElementById('modal-heure-fin').value;
+      const lieu = document.getElementById('modal-lieu').value.trim();
+      
+      if (!heureDebut || !heureFin) {
+        await showConfirm('Champs manquants', 'Veuillez remplir tous les champs');
+        return;
+      }
+      
+      if (heureDebut >= heureFin) {
+        await showConfirm('Erreur de saisie', 'L\'heure de fin doit être après l\'heure de début');
+        return;
+      }
+      
+      try {
+        const response = await fetch('/api/admin/slots', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            date: currentModalDay.date,
+            heureDebut: heureDebut,
+            heureFin: heureFin,
+            lieu: lieu || null
+          })
+        });
+        
+        if (response.ok) {
+          showMessage('Créneau ajouté', 'success');
+          closeSlotModal();
+          loadSlots();
+        } else {
+          const error = await response.json();
+          showMessage(error.error || 'Erreur lors de l\'ajout', 'error');
+        }
+      } catch (error) {
+        showMessage('Erreur lors de l\'ajout', 'error');
+      }
+    }
+
+    /**
+     * Active/désactive un créneau
+     */
+    async function toggleSlot(id, actif) {
+      try {
+        await fetch(`/api/admin/slots/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ actif })
+        });
+        
+        showMessage(actif ? 'Créneau activé' : 'Créneau désactivé', 'success');
+        loadSlots();
+      } catch (error) {
+        showMessage('Erreur lors de la modification', 'error');
+      }
+    }
+
+    /**
+     * Supprime un créneau
+     */
+    async function deleteSlot(id) {
+      const confirmed = await showConfirm('Supprimer le créneau', 'Êtes-vous sûr de vouloir supprimer ce créneau ?');
+      if (!confirmed) return;
+      
+      try {
+        await fetch(`/api/admin/slots/${id}`, { method: 'DELETE' });
+        showMessage('Créneau supprimé', 'success');
+        loadSlots();
+      } catch (error) {
+        showMessage('Erreur lors de la suppression', 'error');
+      }
+    }
+
+    /**
+     * UTILITAIRES
+     */
+
+    /**
+     * Formate une date en français complet
+     */
+    function formatDateFull(dateStr) {
+      if (!dateStr) return 'Date invalide';
+      
+      try {
+        let date;
+        
+        // Si c'est déjà un objet Date
+        if (dateStr instanceof Date) {
+          date = dateStr;
+        } 
+        // Si c'est un timestamp
+        else if (typeof dateStr === 'number') {
+          date = new Date(dateStr);
+        }
+        // Si c'est une string au format ISO (YYYY-MM-DD ou datetime ISO)
+        else if (typeof dateStr === 'string') {
+          // Extraire juste la partie date (YYYY-MM-DD)
+          const datePart = dateStr.split('T')[0];
+          const [year, month, day] = datePart.split('-').map(Number);
+          
+          // Créer la date en heure locale sans conversion UTC
+          date = new Date(year, month - 1, day);
+        }
+        else {
+          return 'Date invalide';
+        }
+        
+        // Vérifier si la date est valide
+        if (isNaN(date.getTime())) {
+          return 'Date invalide';
+        }
+        
+        const jours = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
+        const mois = ['jan', 'fév', 'mar', 'avr', 'mai', 'juin', 'juil', 'août', 'sep', 'oct', 'nov', 'déc'];
+        return `${jours[date.getDay()]} ${date.getDate()} ${mois[date.getMonth()]} ${date.getFullYear()}`;
+      } catch (e) {
+        console.error('Erreur formatage date:', e, dateStr);
+        return 'Date invalide';
+      }
+    }
+
+    /**
+     * Affiche un message de succès ou d'erreur
+     */
+    function showMessage(text, type) {
+      const container = document.getElementById('message-container');
+      const div = document.createElement('div');
+      div.className = type === 'success' ? 'success-message' : 'error-message';
+      div.textContent = text;
+      container.innerHTML = '';
+      container.appendChild(div);
+      
+      setTimeout(() => div.remove(), 4000);
+    }
+
+    // ============ GESTION DES CODES D'INVITATION ============
+
+    /**
+     * Charge la liste des codes d'invitation
+     */
+    async function loadCodes() {
+      try {
+        const response = await fetch('/api/admin/invite-codes');
+        const codes = await response.json();
+        displayCodes(codes);
+      } catch (error) {
+        console.error('Erreur chargement codes:', error);
+      }
+    }
+
+    /**
+     * Affiche la liste des codes
+     */
+    function displayCodes(codes) {
+      const container = document.getElementById('codes-list');
+      
+      if (codes.length === 0) {
+        container.innerHTML = '<p style="text-align: center; color: #8a7a9e; padding: 20px;">Aucun code généré</p>';
+        return;
+      }
+
+      container.innerHTML = '';
+      codes.forEach(code => {
+        const div = document.createElement('div');
+        div.className = 'admin-res-card';
+        
+        const usagePercent = (code.used_count / code.max_uses) * 100;
+        const statusClass = code.used_count >= code.max_uses ? 'exhausted' : 'active';
+        
+        div.innerHTML = `
+          <div style="display: flex; justify-content: space-between; align-items: center; gap: 20px;">
+            <div style="flex: 1;">
+              <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                <strong style="font-size: 18px; font-family: 'Courier New', monospace; color: #c7b6e8;">${code.code}</strong>
+                <span class="status-badge ${statusClass}">${code.used_count >= code.max_uses ? 'Épuisé' : 'Actif'}</span>
+              </div>
+              <div style="color: #8a7a9e; font-size: 13px;">
+                Utilisations: ${code.used_count} / ${code.max_uses}
+                <span style="margin-left: 15px;">Créé le ${formatDateFull(code.created_at)}</span>
+              </div>
+              <div style="margin-top: 8px; background: rgba(87, 25, 56, 0.3); border-radius: 4px; height: 6px; overflow: hidden;">
+                <div style="background: #c7b6e8; height: 100%; width: ${usagePercent}%; transition: width 0.3s;"></div>
+              </div>
+            </div>
+            <div style="display: flex; gap: 10px;">
+              <button onclick="copyCode('${code.code}')" style="padding: 8px 16px; background: #571938; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px;">Copier</button>
+              <button onclick="deleteCode(${code.id})" style="padding: 8px 16px; background: rgba(255, 68, 68, 0.2); color: #ff4444; border: none; border-radius: 6px; cursor: pointer; font-size: 13px;">Supprimer</button>
+            </div>
+          </div>
+        `;
+        
+        container.appendChild(div);
+      });
+    }
+
+    /**
+     * Génère un nouveau code d'invitation
+     */
+    async function generateCode() {
+      const prefix = document.getElementById('code-prefix').value.trim().toUpperCase();
+      const maxUses = parseInt(document.getElementById('code-max-uses').value);
+
+      if (maxUses < 1) {
+        showMessage('Le nombre d\'utilisations doit être au moins 1', 'error');
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/admin/invite-codes', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prefix, maxUses })
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+          showMessage(`Code généré: ${result.code}`, 'success');
+          document.getElementById('code-prefix').value = '';
+          document.getElementById('code-max-uses').value = '1';
+          await loadCodes();
+        } else {
+          showMessage(result.error || 'Erreur lors de la génération', 'error');
+        }
+      } catch (error) {
+        console.error('Erreur génération code:', error);
+        showMessage('Erreur de connexion au serveur', 'error');
+      }
+    }
+
+    /**
+     * Copie un code dans le presse-papier
+     */
+    async function copyCode(code) {
+      try {
+        await navigator.clipboard.writeText(code);
+        showMessage('Code copié dans le presse-papier !', 'success');
+      } catch (error) {
+        console.error('Erreur copie:', error);
+        showMessage('Impossible de copier le code', 'error');
+      }
+    }
+
+    /**
+     * Supprime un code d'invitation
+     */
+    async function deleteCode(codeId) {
+      const confirmed = await showConfirm('Supprimer le code', 'Êtes-vous sûr de vouloir supprimer ce code ?');
+      if (!confirmed) {
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/admin/invite-codes/${codeId}`, {
+          method: 'DELETE'
+        });
+
+        if (response.ok) {
+          showMessage('Code supprimé', 'success');
+          await loadCodes();
+        } else {
+          showMessage('Erreur lors de la suppression', 'error');
+        }
+      } catch (error) {
+        console.error('Erreur suppression code:', error);
+        showMessage('Erreur de connexion au serveur', 'error');
+      }
+    }
+  </script>
+
+</body>
+</html>

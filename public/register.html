@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Créer un compte – Espace privé</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body class="app-bg">
+
+  <div class="card">
+
+    <div class="brand">
+      <div class="brand-logo">KC</div>
+      <div>
+        <div class="brand-name">KYRL CUT</div>
+        <div class="brand-subtitle">Espace privé</div>
+      </div>
+    </div>
+
+    <h1 class="title">Créer un compte</h1>
+    <p class="page-subtitle">Sur invitation uniquement</p>
+
+    <!-- Conteneur pour les messages d'erreur (rempli dynamiquement par JavaScript) -->
+    <div id="error-container"></div>
+
+    <form action="/api/register" method="POST" class="form">
+
+      <label>Email</label>
+      <input type="email" name="email" required>
+
+      <label>Mot de passe</label>
+      <input type="password" name="password" required>
+
+      <label>Numéro de téléphone</label>
+      <input type="tel" name="phone" required>
+
+      <label>Code d’invitation</label>
+      <input type="text" name="inviteCode" required>
+
+      <button class="btn-primary">Créer mon compte</button>
+
+    </form>
+
+    <p class="small-text">
+      Déjà inscrit ? <a href="/login">Se connecter</a>
+    </p>
+
+  </div>
+
+  <script>
+    /**
+     * Gestion de l'affichage des messages d'erreur sur la page d'inscription
+     * 
+     * Ce script lit le paramètre 'error' de l'URL et affiche un message d'erreur
+     * approprié à l'utilisateur, notamment pour les codes d'invitation invalides
+     * ou déjà utilisés.
+     */
+    
+    // Fonction pour extraire les paramètres de l'URL
+    function getUrlParameter(name) {
+      // Utilisation de URLSearchParams pour une manipulation propre des paramètres
+      const urlParams = new URLSearchParams(window.location.search);
+      return urlParams.get(name);
+    }
+
+    // Fonction pour afficher un message d'erreur
+    function displayError(message) {
+      const errorContainer = document.getElementById('error-container');
+      
+      // Création d'un élément div pour le message d'erreur
+      const errorDiv = document.createElement('div');
+      errorDiv.className = 'error-message';
+      errorDiv.textContent = message;
+      
+      // Ajout du message au conteneur
+      errorContainer.appendChild(errorDiv);
+    }
+
+    // Dictionnaire des messages d'erreur pour une maintenance facile
+    const errorMessages = {
+      'missing_fields': 'Veuillez remplir tous les champs obligatoires.',
+      'invite_invalid': 'Le code d\'invitation fourni n\'est pas valide.',
+      'invite_used': 'Ce code d\'invitation a déjà été utilisé le nombre maximum de fois autorisé.',
+      'email_taken': 'Cette adresse email est déjà utilisée. Veuillez vous connecter ou utiliser une autre adresse.',
+      'server_error': 'Une erreur serveur est survenue. Veuillez réessayer plus tard.'
+    };
+
+    // Au chargement de la page, vérifier s'il y a une erreur à afficher
+    document.addEventListener('DOMContentLoaded', function() {
+      const errorCode = getUrlParameter('error');
+      
+      // Si un code d'erreur existe et est reconnu, afficher le message
+      if (errorCode && errorMessages[errorCode]) {
+        displayError(errorMessages[errorCode]);
+      }
+    });
+  </script>
+
+</body>
+</html>
