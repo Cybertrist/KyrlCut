@@ -287,10 +287,20 @@
         const dateFormatted = res.date_reservation ? formatDateFull(res.date_reservation) : 'Date non disponible';
         const heureDebut = res.heure_debut ? res.heure_debut.substring(0,5) : '—';
         
+        // Formater le statut avec la première lettre en majuscule
+        let statutLabel = res.statut;
+        if (res.statut === 'confirmee') {
+          statutLabel = 'Terminée';
+        } else if (res.statut === 'annulee') {
+          statutLabel = 'Annulée';
+        } else if (res.statut === 'terminee') {
+          statutLabel = 'Terminée';
+        }
+        
         div.innerHTML = `
           <div class="reservation-card-header">
             <strong>${res.prestation_nom || 'Prestation'}</strong>
-            <span class="reservation-status ${res.statut}">${res.statut === 'confirmee' ? 'terminée' : res.statut}</span>
+            <span class="reservation-status ${res.statut}">${statutLabel}</span>
           </div>
           <div class="reservation-card-body">
             <p>📅 ${dateFormatted}</p>
