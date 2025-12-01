@@ -64,6 +64,11 @@ app.use(session({
 
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Route explicite pour le favicon
+app.get('/favicon.ico', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'favicon.ico'));
+});
+
 // Rediriger / vers /login
 app.get('/', (req, res) => {
   res.redirect('/login');
