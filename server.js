@@ -838,6 +838,6 @@ app.delete('/api/admin/invite-codes/:id', requireAuth, requireAdmin, async (req,
 });
 
 // --- LANCEMENT SERVEUR ---
-app.listen(3000, () => {
-  console.log('Serveur lancé sur http://localhost:3000');
+app.listen(25021, () => {
+  console.log('Serveur lancé sur http://192.168.1.35:25021');
 });
