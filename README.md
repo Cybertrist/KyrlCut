@@ -139,11 +139,21 @@ GMAIL_REFRESH_TOKEN=votre_refresh_token
 
 #### 📧 Obtenir les credentials Gmail OAuth2 :
 
-1. Allez sur [Google Cloud Console](https://console.cloud.google.com/)
-2. Créez un projet
-3. Activez l'API Gmail
-4. Créez des identifiants OAuth 2.0
-5. Utilisez [OAuth Playground](https://developers.google.com/oauthplayground/) pour obtenir le refresh token
+1. **Google Cloud Console** : https://console.cloud.google.com/
+   - Créez un nouveau projet
+   - Activez l'API Gmail
+   - Créez des identifiants OAuth 2.0 (Application Web)
+   - Ajoutez `https://developers.google.com/oauthplayground` aux URI de redirection
+
+2. **OAuth Playground** : https://developers.google.com/oauthplayground/
+   - Cliquez sur l'icône ⚙️ en haut à droite
+   - Cochez "Use your own OAuth credentials"
+   - Renseignez votre Client ID et Client Secret
+   - Dans la liste de gauche, sélectionnez "Gmail API v1" → `https://mail.google.com/`
+   - Cliquez "Authorize APIs"
+   - Connectez-vous avec votre compte Gmail
+   - Cliquez "Exchange authorization code for tokens"
+   - Copiez le **Refresh token** et mettez-le dans votre `.env`
 
 ### 4. Initialiser la base de données
 
@@ -176,7 +186,9 @@ npm run create-admin
 - 📧 Email : `admin@kyrian.com`
 - 🔑 Mot de passe : `admin123`
 
-⚠️ **IMPORTANT : Changez ce mot de passe après la première connexion !**
+⚠️ **IMPORTANT : Changez immédiatement ces identifiants après la première connexion !**
+
+> **Note** : Modifiez le script `scripts/create-admin.js` avec vos propres identifiants avant de l'exécuter en production.
 
 ### 6. Lancer le serveur
 

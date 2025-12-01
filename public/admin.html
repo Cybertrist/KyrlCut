@@ -492,8 +492,18 @@
       try {
         // Calculer les dates de la semaine sélectionnée
         const today = new Date();
-        const weekStart = new Date(today);
-        weekStart.setDate(today.getDate() - today.getDay() + 1 + (currentWeek * 7));
+        today.setHours(0, 0, 0, 0); // Normaliser à minuit
+        
+        // Trouver le lundi de la semaine actuelle
+        const currentDay = today.getDay();
+        const daysFromMonday = currentDay === 0 ? 6 : currentDay - 1; // Dimanche = 6 jours depuis lundi
+        
+        const currentMonday = new Date(today);
+        currentMonday.setDate(today.getDate() - daysFromMonday);
+        
+        // Ajouter le décalage de semaine
+        const weekStart = new Date(currentMonday);
+        weekStart.setDate(currentMonday.getDate() + (currentWeek * 7));
         
         const startDate = weekStart.toISOString().split('T')[0];
         

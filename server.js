@@ -709,6 +709,18 @@ app.post('/api/admin/slots', requireAuth, requireAdmin, async (req, res) => {
     return res.status(400).json({ error: 'Date, heure de début et heure de fin requis' });
   }
 
+  // Validation des horaires (8h-20h)
+  const startHour = parseInt(heureDebut.split(':')[0]);
+  const endHour = parseInt(heureFin.split(':')[0]);
+  
+  if (startHour < 8 || startHour >= 20 || endHour < 8 || endHour > 20) {
+    return res.status(400).json({ error: 'Les créneaux doivent être entre 8h et 20h' });
+  }
+  
+  if (heureDebut >= heureFin) {
+    return res.status(400).json({ error: 'L\'heure de fin doit être après l\'heure de début' });
+  }
+
   try {
     await db.query(
       'INSERT INTO creneaux_dates (date_specifique, heure_debut, heure_fin, lieu, actif) VALUES (?, ?, ?, ?, TRUE)',

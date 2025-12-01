@@ -32,5 +32,8 @@ temp/
 *.tmp
 
 # Base de données
+*.sql
 *.sql.gz
 backups/
+db/*.sql
+!db/init.sql
