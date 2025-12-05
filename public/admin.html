@@ -993,8 +993,8 @@
                 Utilisations: ${code.used_count} / ${code.max_uses}
                 <span style="margin-left: 15px;">Créé le ${formatDateFull(code.created_at)}</span>
               </div>
-              <div style="margin-top: 8px; background: rgba(87, 25, 56, 0.3); border-radius: 4px; height: 6px; overflow: hidden;">
-                <div style="background: #c7b6e8; height: 100%; width: ${usagePercent}%; transition: width 0.3s;"></div>
+              <div style="margin-top: 8px; background: rgba(30, 30, 45, 0.5); border-radius: 4px; height: 6px; overflow: hidden;">
+                <div style="background: ${code.used_count >= code.max_uses ? '#ef4444' : '#22c55e'}; height: 100%; width: ${usagePercent}%; transition: all 0.3s;"></div>
               </div>
             </div>
             <div style="display: flex; gap: 10px;">
