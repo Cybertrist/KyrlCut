@@ -151,11 +151,11 @@
             window.location.href = '/login?error=account_deleted';
           } else if (response.ok) {
             const user = await response.json();
-            const adminLink = document.getElementById('admin-link');
-            if (adminLink && user.role === 'admin' && adminLink.style.display === 'none') {
-              adminLink.style.display = 'block';
-            } else if (adminLink && user.role !== 'admin' && adminLink.style.display === 'block') {
-              adminLink.style.display = 'none';
+            const adminBtn = document.getElementById('admin-btn');
+            if (adminBtn && user.role === 'admin' && adminBtn.style.display === 'none') {
+              adminBtn.style.display = 'inline-block';
+            } else if (adminBtn && user.role !== 'admin' && adminBtn.style.display !== 'none') {
+              adminBtn.style.display = 'none';
             }
           }
         } catch (error) {

@@ -300,13 +300,19 @@
         }
       }, 3000);
       
-      // Vérifier toutes les 2 secondes si le compte existe toujours
+      // Vérifier toutes les 2 secondes si le compte existe toujours et si toujours admin
       setInterval(async () => {
         try {
           const response = await fetch('/api/user/me');
           if (response.status === 401 || !response.ok) {
-            // Déconnecté, rediriger vers login
+            // Déconnecté ou compte supprimé, rediriger vers login
             window.location.href = '/login?error=session_expired';
+          } else {
+            const user = await response.json();
+            if (user.role !== 'admin') {
+              // N'est plus admin, rediriger vers reservations
+              window.location.href = '/reservations?info=access_revoked';
+            }
           }
         } catch (error) {
           // Ignorer les erreurs réseau temporaires
