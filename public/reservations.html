@@ -230,23 +230,23 @@
     }
 
     /**
-     * Génère les dates de la semaine en cours (Lundi à Dimanche)
+     * Génère les dates de la semaine actuelle (7 jours)
      */
     function generateDates() {
       const container = document.getElementById('dates-container');
       container.innerHTML = '';
       
       const today = new Date();
-      const joursSemaine = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
+      const joursSemaine = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
       const mois = ['jan', 'fév', 'mar', 'avr', 'mai', 'juin', 'juil', 'août', 'sep', 'oct', 'nov', 'déc'];
       
-      // Trouver le lundi de la semaine en cours
-      const currentDay = today.getDay();
-      const diff = currentDay === 0 ? -6 : 1 - currentDay; // Si dimanche, reculer de 6 jours, sinon aller au lundi
+      // Trouver le lundi de la semaine actuelle
+      const currentDay = today.getDay(); // 0 = dimanche, 1 = lundi, ..., 6 = samedi
+      const daysFromMonday = currentDay === 0 ? 6 : currentDay - 1; // Si dimanche (0), alors 6 jours depuis lundi
       const monday = new Date(today);
-      monday.setDate(today.getDate() + diff);
+      monday.setDate(today.getDate() - daysFromMonday);
       
-      // Générer du lundi au dimanche (7 jours)
+      // Générer 7 jours à partir du lundi
       for (let i = 0; i < 7; i++) {
         const date = new Date(monday);
         date.setDate(monday.getDate() + i);
@@ -257,7 +257,8 @@
         const day = String(date.getDate()).padStart(2, '0');
         const dateStr = `${year}-${month}-${day}`;
         
-        const jour = joursSemaine[date.getDay()];
+        // i correspond à l'index du jour (0=Lundi, 1=Mardi, ..., 6=Dimanche)
+        const jour = joursSemaine[i];
         const numJour = date.getDate();
         const moisStr = mois[date.getMonth()];
         
@@ -495,10 +496,13 @@
      */
     function formatDate(dateStr) {
       const date = new Date(dateStr + 'T00:00:00');
-      const jours = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
+      const jours = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
       const mois = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
       
-      return `${jours[date.getDay()]} ${date.getDate()} ${mois[date.getMonth()]}`;
+      // Convertir getDay() (0=Dimanche, 1=Lundi...) en index (0=Lundi, 1=Mardi...)
+      const dayIndex = date.getDay() === 0 ? 6 : date.getDay() - 1;
+      
+      return `${jours[dayIndex]} ${date.getDate()} ${mois[date.getMonth()]}`;
     }
 
     /**
