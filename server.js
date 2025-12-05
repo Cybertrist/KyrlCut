@@ -821,6 +821,39 @@ app.put('/api/admin/users/:id/role', requireAuth, requireAdmin, async (req, res)
 });
 
 /**
+ * DELETE /api/admin/users/:id
+ * Supprime un utilisateur (sauf les comptes protégés)
+ */
+app.delete('/api/admin/users/:id', requireAuth, requireAdmin, async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    // Vérifier que ce n'est pas un compte protégé
+    const [user] = await db.query('SELECT email FROM users WHERE id = ?', [id]);
+    
+    if (user.length === 0) {
+      return res.status(404).json({ error: 'Utilisateur introuvable' });
+    }
+
+    const protectedEmails = ['kyrian.mh@gmail.com', 'tristanjoncour29@gmail.com'];
+    if (protectedEmails.includes(user[0].email)) {
+      return res.status(403).json({ error: 'Ce compte ne peut pas être supprimé' });
+    }
+
+    // Supprimer les réservations de l'utilisateur
+    await db.query('DELETE FROM reservations WHERE user_id = ?', [id]);
+    
+    // Supprimer l'utilisateur
+    await db.query('DELETE FROM users WHERE id = ?', [id]);
+    
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Erreur suppression utilisateur:', err);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
+/**
  * GET /api/admin/invite-codes
  * Liste tous les codes d'invitation
  */
