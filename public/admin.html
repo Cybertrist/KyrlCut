@@ -928,8 +928,8 @@
             ${user.role === 'admin' && user.email !== 'kyrian.mh@gmail.com' && user.email !== 'tristanjoncour29@gmail.com' ? `
               <button onclick="toggleUserRole(${user.id}, 'user')" style="padding: 10px; background: rgba(234, 179, 8, 0.1); border: 1px solid rgba(234, 179, 8, 0.25); border-radius: 8px; color: #eab308; cursor: pointer; transition: all 0.3s; display: flex; align-items: center; justify-content: center;" onmouseover="this.style.background='rgba(234, 179, 8, 0.15)'; this.style.borderColor='rgba(234, 179, 8, 0.35)'; this.style.transform='translateY(-1px)'" onmouseout="this.style.background='rgba(234, 179, 8, 0.1)'; this.style.borderColor='rgba(234, 179, 8, 0.25)'; this.style.transform='translateY(0)'" title="Rétrograder en utilisateur">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                  <polyline points="17 11 12 6 7 11"></polyline>
-                  <polyline points="17 18 12 13 7 18"></polyline>
+                  <polyline points="7 13 12 18 17 13"></polyline>
+                  <polyline points="7 6 12 11 17 6"></polyline>
                 </svg>
               </button>
             ` : ''}
