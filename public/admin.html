@@ -95,13 +95,6 @@
           <button onclick="changeWeek(1)" class="btn-secondary" style="padding: 8px 16px;">Semaine suivante ▶</button>
         </div>
 
-        <div style="margin-bottom: 15px; display: flex; align-items: center; gap: 10px;">
-          <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 14px; color: #c7b6e8;">
-            <input type="checkbox" id="show-inactive-slots" onchange="loadSlots()" style="cursor: pointer;">
-            <span>Afficher les créneaux désactivés</span>
-          </label>
-        </div>
-
         <div class="admin-days-grid">
           <div class="admin-day-card" data-day="Lundi">
             <h3>Lundi</h3>
@@ -528,12 +521,8 @@
         const endDay = String(weekEnd.getDate()).padStart(2, '0');
         const endDate = `${endYear}-${endMonth}-${endDay}`;
         
-        // Vérifier si on doit afficher les créneaux inactifs
-        const showInactive = document.getElementById('show-inactive-slots')?.checked || false;
-        
         // Charger les créneaux pour cette plage de dates
-        const url = `/api/admin/slots?startDate=${startDate}&endDate=${endDate}${showInactive ? '&showInactive=true' : ''}`;
-        const response = await fetch(url);
+        const response = await fetch(`/api/admin/slots?startDate=${startDate}&endDate=${endDate}`);
         const slots = await response.json();
         
         // Mettre à jour les titres des cartes avec les dates de la semaine sélectionnée

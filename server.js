@@ -673,19 +673,14 @@ app.delete('/api/admin/reservations/:id', requireAuth, requireAdmin, async (req,
 /**
  * GET /api/admin/slots
  * Liste les créneaux pour les 2 prochaines semaines (par date spécifique)
- * Query: startDate, endDate, showInactive (optionnels)
+ * Query: startDate, endDate (optionnels)
  */
 app.get('/api/admin/slots', requireAuth, requireAdmin, async (req, res) => {
-  const { startDate, endDate, showInactive } = req.query;
+  const { startDate, endDate } = req.query;
   
   try {
     let query = 'SELECT *, DATE_FORMAT(date_specifique, "%Y-%m-%d") as date_specifique FROM creneaux_dates WHERE 1=1';
     const params = [];
-    
-    // Par défaut, ne montrer que les créneaux actifs (sauf si showInactive=true)
-    if (showInactive !== 'true') {
-      query += ' AND actif = TRUE';
-    }
     
     if (startDate) {
       query += ' AND date_specifique >= ?';
