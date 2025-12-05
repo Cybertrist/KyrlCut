@@ -781,6 +781,46 @@ app.delete('/api/admin/slots/:id', requireAuth, requireAdmin, async (req, res) =
 // --- ROUTES API CODES D'INVITATION ---
 
 /**
+ * GET /api/admin/users
+ * Liste tous les utilisateurs
+ */
+app.get('/api/admin/users', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const [users] = await db.query(
+      'SELECT id, email, phone, role, created_at FROM users ORDER BY created_at DESC'
+    );
+    res.json(users);
+  } catch (err) {
+    console.error('Erreur chargement utilisateurs:', err);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
+/**
+ * PUT /api/admin/users/:id/role
+ * Modifie le rôle d'un utilisateur
+ */
+app.put('/api/admin/users/:id/role', requireAuth, requireAdmin, async (req, res) => {
+  const { id } = req.params;
+  const { role } = req.body;
+
+  if (!['user', 'admin'].includes(role)) {
+    return res.status(400).json({ error: 'Rôle invalide' });
+  }
+
+  try {
+    await db.query(
+      'UPDATE users SET role = ? WHERE id = ?',
+      [role, id]
+    );
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Erreur modification rôle:', err);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
+/**
  * GET /api/admin/invite-codes
  * Liste tous les codes d'invitation
  */
