@@ -75,10 +75,23 @@ app.get('/', (req, res) => {
 });
 
 // Middleware de protection
-function requireAuth(req, res, next) {
+async function requireAuth(req, res, next) {
   if (!req.session.userId) {
     return res.redirect('/login?error=login_required');
   }
+  
+  // Vérifier que l'utilisateur existe toujours dans la base de données
+  try {
+    const [user] = await db.query('SELECT id FROM users WHERE id = ?', [req.session.userId]);
+    if (user.length === 0) {
+      // L'utilisateur a été supprimé, déconnecter la session
+      req.session.destroy();
+      return res.redirect('/login?error=account_deleted');
+    }
+  } catch (err) {
+    console.error('Erreur vérification utilisateur:', err);
+  }
+  
   next();
 }
 

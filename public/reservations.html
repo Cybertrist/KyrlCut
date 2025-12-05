@@ -148,6 +148,19 @@
       generateDates();
       checkForMessages();
       await checkUserRole();
+      
+      // Vérifier toutes les 2 secondes si le compte existe toujours
+      setInterval(async () => {
+        try {
+          const response = await fetch('/api/user/me');
+          if (response.status === 401 || response.redirected) {
+            // Compte supprimé ou déconnecté, rediriger vers login
+            window.location.href = '/login?error=account_deleted';
+          }
+        } catch (error) {
+          console.error('Erreur vérification compte:', error);
+        }
+      }, 2000);
     });
 
     /**

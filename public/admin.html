@@ -282,6 +282,18 @@
       loadSlots();
       loadUsers();
       loadCodes();
+      
+      // Actualisation automatique toutes les 3 secondes
+      setInterval(() => {
+        const activeTab = document.querySelector('.admin-tab.active');
+        if (activeTab) {
+          const tabName = activeTab.dataset.tab;
+          if (tabName === 'reservations') loadReservations();
+          else if (tabName === 'slots') loadSlots();
+          else if (tabName === 'users') loadUsers();
+          else if (tabName === 'codes') loadCodes();
+        }
+      }, 3000);
     });
 
     /**
