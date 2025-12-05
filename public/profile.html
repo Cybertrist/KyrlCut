@@ -142,13 +142,21 @@
       await loadReservations();
       setupForms();
       
-      // Vérifier toutes les 2 secondes si le compte existe toujours
+      // Vérifier toutes les 2 secondes si le compte existe toujours et actualiser le rôle
       setInterval(async () => {
         try {
           const response = await fetch('/api/user/me');
           if (response.status === 401 || response.redirected) {
             // Compte supprimé ou déconnecté, rediriger vers login
             window.location.href = '/login?error=account_deleted';
+          } else if (response.ok) {
+            const user = await response.json();
+            const adminLink = document.getElementById('admin-link');
+            if (adminLink && user.role === 'admin' && adminLink.style.display === 'none') {
+              adminLink.style.display = 'block';
+            } else if (adminLink && user.role !== 'admin' && adminLink.style.display === 'block') {
+              adminLink.style.display = 'none';
+            }
           }
         } catch (error) {
           console.error('Erreur vérification compte:', error);
