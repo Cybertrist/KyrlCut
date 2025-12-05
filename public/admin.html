@@ -304,18 +304,26 @@
       setInterval(async () => {
         try {
           const response = await fetch('/api/user/me');
-          if (response.status === 401 || !response.ok) {
+          if (response.status === 401) {
             // Déconnecté ou compte supprimé, rediriger vers login
             window.location.href = '/login?error=session_expired';
-          } else {
-            const user = await response.json();
-            if (user.role !== 'admin') {
-              // N'est plus admin, rediriger vers reservations
-              window.location.href = '/reservations?info=access_revoked';
-            }
+            return;
+          }
+          
+          if (!response.ok) {
+            // Autre erreur, rediriger vers login
+            window.location.href = '/login?error=session_expired';
+            return;
+          }
+          
+          const user = await response.json();
+          if (user.role !== 'admin') {
+            // N'est plus admin, rediriger vers reservations
+            window.location.href = '/reservations?info=access_revoked';
           }
         } catch (error) {
-          // Ignorer les erreurs réseau temporaires
+          // En cas d'erreur réseau, rediriger vers login
+          window.location.href = '/login?error=session_expired';
         }
       }, 2000);
     });
