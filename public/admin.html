@@ -284,16 +284,34 @@
       loadCodes();
       
       // Actualisation automatique toutes les 3 secondes (en mode silencieux)
-      setInterval(() => {
+      setInterval(async () => {
         const activeTab = document.querySelector('.admin-tab.active');
         if (activeTab) {
           const tabName = activeTab.dataset.tab;
-          if (tabName === 'reservations') loadReservations(true);
-          else if (tabName === 'slots') loadSlots(true);
-          else if (tabName === 'users') loadUsers(true);
-          else if (tabName === 'codes') loadCodes(true);
+          try {
+            if (tabName === 'reservations') await loadReservations(true);
+            else if (tabName === 'slots') await loadSlots(true);
+            else if (tabName === 'users') await loadUsers(true);
+            else if (tabName === 'codes') await loadCodes(true);
+          } catch (error) {
+            // En cas d'erreur (ex: déconnexion), ne rien faire en mode silencieux
+            console.error('Erreur actualisation:', error);
+          }
         }
       }, 3000);
+      
+      // Vérifier toutes les 2 secondes si le compte existe toujours
+      setInterval(async () => {
+        try {
+          const response = await fetch('/api/user/me');
+          if (response.status === 401 || !response.ok) {
+            // Déconnecté, rediriger vers login
+            window.location.href = '/login?error=session_expired';
+          }
+        } catch (error) {
+          // Ignorer les erreurs réseau temporaires
+        }
+      }, 2000);
     });
 
     /**
@@ -486,7 +504,9 @@
         
       } catch (error) {
         console.error('Erreur chargement réservations:', error);
-        container.innerHTML = '<p class="error-state">Erreur de chargement</p>';
+        if (!silent) {
+          container.innerHTML = '<p class="error-state">Erreur de chargement</p>';
+        }
       }
     }
 
