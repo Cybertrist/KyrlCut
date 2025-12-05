@@ -59,7 +59,13 @@ app.use(express.json());
 app.use(session({
   secret: process.env.SESSION_SECRET || 'fallback-secret',
   resave: false,
-  saveUninitialized: false
+  saveUninitialized: false,
+  cookie: {
+    secure: process.env.NODE_ENV === 'production', // HTTPS uniquement en production
+    httpOnly: true, // Empêche l'accès JavaScript au cookie
+    sameSite: 'strict', // Protection CSRF
+    maxAge: 24 * 60 * 60 * 1000 // 24 heures
+  }
 }));
 
 app.use(express.static(path.join(__dirname, 'public')));
