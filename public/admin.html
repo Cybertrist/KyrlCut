@@ -764,6 +764,30 @@
     }
 
     /**
+     * Formate une date avec heure
+     */
+    function formatDateTime(dateStr) {
+      if (!dateStr) return 'Date invalide';
+      
+      try {
+        const date = new Date(dateStr);
+        
+        if (isNaN(date.getTime())) {
+          return 'Date invalide';
+        }
+        
+        const day = String(date.getDate()).padStart(2, '0');
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const year = date.getFullYear();
+        
+        return `${day}/${month}/${year}`;
+      } catch (e) {
+        console.error('Erreur formatage date:', e, dateStr);
+        return 'Date invalide';
+      }
+    }
+
+    /**
      * Affiche un message de succès ou d'erreur
      */
     function showMessage(text, type) {
