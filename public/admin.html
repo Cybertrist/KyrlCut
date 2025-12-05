@@ -283,15 +283,15 @@
       loadUsers();
       loadCodes();
       
-      // Actualisation automatique toutes les 3 secondes
+      // Actualisation automatique toutes les 3 secondes (en mode silencieux)
       setInterval(() => {
         const activeTab = document.querySelector('.admin-tab.active');
         if (activeTab) {
           const tabName = activeTab.dataset.tab;
-          if (tabName === 'reservations') loadReservations();
-          else if (tabName === 'slots') loadSlots();
-          else if (tabName === 'users') loadUsers();
-          else if (tabName === 'codes') loadCodes();
+          if (tabName === 'reservations') loadReservations(true);
+          else if (tabName === 'slots') loadSlots(true);
+          else if (tabName === 'users') loadUsers(true);
+          else if (tabName === 'codes') loadCodes(true);
         }
       }, 3000);
     });
@@ -413,19 +413,30 @@
      * GESTION DES RENDEZ-VOUS
      */
 
+    let lastReservationsData = null;
+
     /**
      * Charge la liste des rendez-vous
      */
-    async function loadReservations() {
+    async function loadReservations(silent = false) {
       const container = document.getElementById('reservations-list');
       const filterDate = document.getElementById('filter-date').value;
       
-      container.innerHTML = '<p class="loading">Chargement...</p>';
+      if (!silent) {
+        container.innerHTML = '<p class="loading">Chargement...</p>';
+      }
       
       try {
         const url = filterDate ? `/api/admin/reservations?date=${filterDate}` : '/api/admin/reservations';
         const response = await fetch(url);
         const reservations = await response.json();
+        
+        // Vérifier si les données ont changé
+        const currentData = JSON.stringify(reservations);
+        if (silent && lastReservationsData === currentData) {
+          return; // Pas de changement, ne rien faire
+        }
+        lastReservationsData = currentData;
         
         if (reservations.length === 0) {
           container.innerHTML = '<p class="empty-state">Aucun rendez-vous trouvé</p>';
@@ -531,7 +542,9 @@
     /**
      * Charge tous les créneaux disponibles pour la semaine sélectionnée
      */
-    async function loadSlots() {
+    let lastSlotsData = null;
+
+    async function loadSlots(silent = false) {
       try {
         // Calculer les dates de la semaine sélectionnée
         const today = new Date();
@@ -566,6 +579,13 @@
         // Charger les créneaux pour cette plage de dates
         const response = await fetch(`/api/admin/slots?startDate=${startDate}&endDate=${endDate}`);
         const slots = await response.json();
+        
+        // Vérifier si les données ont changé
+        const currentData = JSON.stringify(slots);
+        if (silent && lastSlotsData === currentData) {
+          return; // Pas de changement
+        }
+        lastSlotsData = currentData;
         
         // Mettre à jour les titres des cartes avec les dates de la semaine sélectionnée
         updateDayTitles();
@@ -818,10 +838,20 @@
     /**
      * Charge la liste des utilisateurs
      */
-    async function loadUsers() {
+    let lastUsersData = null;
+
+    async function loadUsers(silent = false) {
       try {
         const response = await fetch('/api/admin/users');
         const users = await response.json();
+        
+        // Vérifier si les données ont changé
+        const currentData = JSON.stringify(users);
+        if (silent && lastUsersData === currentData) {
+          return; // Pas de changement
+        }
+        lastUsersData = currentData;
+        
         displayUsers(users);
       } catch (error) {
         console.error('Erreur chargement utilisateurs:', error);
@@ -965,10 +995,20 @@
     /**
      * Charge la liste des codes d'invitation
      */
-    async function loadCodes() {
+    let lastCodesData = null;
+
+    async function loadCodes(silent = false) {
       try {
         const response = await fetch('/api/admin/invite-codes');
         const codes = await response.json();
+        
+        // Vérifier si les données ont changé
+        const currentData = JSON.stringify(codes);
+        if (silent && lastCodesData === currentData) {
+          return; // Pas de changement
+        }
+        lastCodesData = currentData;
+        
         displayCodes(codes);
       } catch (error) {
         console.error('Erreur chargement codes:', error);
