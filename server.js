@@ -77,6 +77,10 @@ app.get('/', (req, res) => {
 // Middleware de protection
 async function requireAuth(req, res, next) {
   if (!req.session.userId) {
+    // Si c'est une requête AJAX, renvoyer 401 au lieu de rediriger
+    if (req.xhr || req.headers.accept?.indexOf('json') > -1) {
+      return res.status(401).json({ error: 'Non authentifié' });
+    }
     return res.redirect('/login?error=login_required');
   }
   
@@ -86,6 +90,10 @@ async function requireAuth(req, res, next) {
     if (user.length === 0) {
       // L'utilisateur a été supprimé, déconnecter la session
       req.session.destroy();
+      // Si c'est une requête AJAX, renvoyer 401 au lieu de rediriger
+      if (req.xhr || req.headers.accept?.indexOf('json') > -1) {
+        return res.status(401).json({ error: 'Compte supprimé' });
+      }
       return res.redirect('/login?error=account_deleted');
     }
   } catch (err) {

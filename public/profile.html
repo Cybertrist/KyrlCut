@@ -162,7 +162,14 @@
           console.error('Erreur vérification compte:', error);
         }
       }, 2000);
+      
+      // Actualiser les réservations toutes les 3 secondes
+      setInterval(() => {
+        loadReservations(true);
+      }, 3000);
     });
+
+    let lastReservationsData = null;
 
     /**
      * Charge les données de l'utilisateur
@@ -192,12 +199,14 @@
     /**
      * Charge les réservations de l'utilisateur
      */
-    async function loadReservations() {
+    async function loadReservations(silent = false) {
       const upcomingContainer = document.getElementById('upcoming-reservations');
       const pastContainer = document.getElementById('past-reservations');
       
-      upcomingContainer.innerHTML = '<p class="empty-state-compact">Chargement...</p>';
-      pastContainer.innerHTML = '<p class="empty-state-compact">Chargement...</p>';
+      if (!silent) {
+        upcomingContainer.innerHTML = '<p class="empty-state-compact">Chargement...</p>';
+        pastContainer.innerHTML = '<p class="empty-state-compact">Chargement...</p>';
+      }
       
       try {
         const response = await fetch('/api/user/reservations');
@@ -207,6 +216,7 @@
         }
         
         const reservations = await response.json();
+        
         console.log('Réservations chargées:', reservations);
         
         const now = new Date();
